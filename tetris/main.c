@@ -1,5 +1,5 @@
 #include <msp430.h>
-#include "common.h"
+//#include "common.h"
 #include "msp430-tetris.h"
 
 void main(void){
