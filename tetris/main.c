@@ -1,5 +1,5 @@
 #include <msp430.h>
-#include "common.h"
+//#include "common.h"
 #include "msp430-tetris.h"
 
 void main(void){
@@ -16,7 +16,8 @@ void main(void){
   while (true){
     //Draw Menu
     clearScreen(COLOR_BLACK);
-    drawString8x12("TETRIS", 20);
+    drawString11x16(20,20,"TETRIS", COLOR_WHITE, COLOR_BLACK);
+    drawString8x12(20,50,"Select Difficulty", COLOR_WHITE, COLOR_BLACK);  
     //Process menu selections
     while (true){
       selection = getKey();
