@@ -14,10 +14,11 @@ main()
   lcd_init();
   u_char width = screenWidth, height = screenHeight;
 
-  clearScreen(COLOR_BLUE);
+  clearScreen(COLOR_GREEN);
 
-  drawString5x7(20,20, "hello", COLOR_GREEN, COLOR_RED);
-
-  fillRectangle(30,30, 60, 60, COLOR_ORANGE);
+  drawString5x7(20,20, "Place your bet!", COLOR_WHITE, COLOR_GREEN);
+  drawString5x7(1,150, "Inc  Dec  Bet  Decks", COLOR_WHITE, COLOR_GREEN);
+  drawCard(20,80,50,60, COLOR_WHITE, '{', 'K'); 
+  //fillRectangle(30,30, 60, 60, COLOR_ORANGE);
   
 }
