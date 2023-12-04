@@ -36,8 +36,8 @@ void fillRectangle(u_char colMin, u_char rowMin, u_char width, u_char height,
     lcd_writeColor(colorBGR);
   }
 }
-//////////////Draw Card////////////////////////////
-void drawCard(u_char colMin, u_char rowMin, u_char width, u_char height, 
+//////////////Draw hand////////////////////////////
+void drawHand(u_char colMin, u_char rowMin, u_char width, u_char height, 
 	      u_int colorBGR, char *suit, char value)
 {
   u_char colLimit = colMin + width, rowLimit = rowMin + height;
@@ -57,6 +57,12 @@ void drawCard(u_char colMin, u_char rowMin, u_char width, u_char height,
   drawChar5x7(colMin + 1, rowMin + 25, temp, suitC, COLOR_WHITE); // draws card suit
 }
 ////////////////
+void drawBOC( u_char colMin, u_char rowMin, u_char width, u_char height, u_int colorBGR){
+  fillRectangle(colMin, rowMin, 50, 2, COLOR_BLACK);
+  fillRectangle(colMin, rowMin, 2, 60, COLOR_BLACK);
+  fillRectangle(colMin + 49, rowMin, 2, 60, COLOR_BLACK);
+  fillRectangle(colMin, rowMin + 59, 50, 2, COLOR_BLACK);
+}
 /** Clear screen (fill with color)
  *  
  *  \param colorBGR The color to fill screen

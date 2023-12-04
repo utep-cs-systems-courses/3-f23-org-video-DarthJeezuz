@@ -23,7 +23,7 @@ void drawPixel(u_char col, u_char row, u_int colorBGR);
  */
 void fillRectangle(u_char colMin, u_char rowMin, u_char width, u_char height, u_int colorBGR);
 ///////////////draw Card///////////////
-void drawCard(u_char colMin, u_char rowMin, u_char width, u_char height,
+void drawHand(u_char colMin, u_char rowMin, u_char width, u_char height,
 	      u_int colorBGR, char *suit, char value);
 /** Clear screen (fill with color)
  *  

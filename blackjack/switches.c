@@ -1,7 +1,7 @@
 #include <msp430.h>
 #include "switches.h"
 
-#define SWITCHES 15
+//#define SWITCHES 15
 
 static char switch_update_interrupt_sense()
 {
