@@ -16,119 +16,66 @@ int wallet = 150;
 int player_bet = 0;
 int player_hand_value = 0;//total value
 int dealer_hand_value = 0;
-bool betting = true; // boolean
+bool noStart = true;
+bool betting = false; // boolean
 bool second_hand = false; // boolean
 bool stats = false;
 bool dealers_turn = false;
 bool fin = false;
 
-void initLCD();
 void sendCommand(unsigned char command);
-void sendData(unsigned char data);
-void displayString(char *str);
-void displayInt(int value);
-int isButtonPressed(int button);
-void initGame();
+void splitHand();
+bool checkHand();
+bool checkTAK();
+void displayCards();
+void displayValues();
+void drawDealersHand();
 void dealInitialCards();
-void playerTurn();
-void dealerTurn();
 int calculateHandValue(int hand[], int size);
-void displayHands();
+void updateDisplay();
+void dealerTurn();
+void declareWin();
+void declareLoss();
+void playAgain();
+
 
 int main(void) {
 
   WDTCTL = WDTPW + WDTHOLD; // Stop the watchdog timer
-  initLCD();
-  initButtons();
-  initGame();
-
-  while (1) {
-    displayString("Place your bet");
-    while (!isButtonPressed(BUTTON4)) {
-      if (isButtonPressed(BUTTON1)) {
-	player_bet++;
-	displayInt(player_bet);
-	__delay_cycles(100000);
-      } else if (isButtonPressed(BUTTON2) && player_bet > 0) {
-	player_bet--;
-	displayInt(player_bet);
-	__delay_cycles(100000);
-      }
-    }
-    dealInitialCards();
-    displayHands();
-    playerTurn();
-    dealerTurn();
-
-    // Check winner and update display accordingly
-    // ...
-    // Allow the player to start a new round
-    // ...
+  configureClocks();
+  lcd_init();
+  switch_init();
+  or_sr(0x8);// GIE (enable interrupts)
+  wallet = 150;
+  clearScreen(COLOR_GREEN);
+  drawString5x7(20, 40, "BLACKJACK", COLOR_BLACK, COLOR_GREEN);
+  drawString5x7(1, 150, "Press any button", COLOR_BLACK, COLOR_GREEN);
+  // Insert card graphic if there's time
+  while(no_start){ or_sr(0x10);}
+  betStage();
+  while(1){
+    or_sr(0x10);
   }
 }
 
-void sendCommand(unsigned char command) {
-  if(betting){ // (inc|dec|bet|stats)
-    switch(command){
-    case 1://increase bet
-      bet += 10;
-      break;
-    case 2://decrease bet
-      if(bet <= 0){
-	// send error message
-	break;
-      }
-      bet -= 10;
-      break;
-    case 3:// toggle statistics
-      if(stats){stats = false;}
-      else{stats = true;}
-      break;
-    case 4:// start round
-      betting = false;
-      dealInitialCards();
-      break;
-  }
-  else if(playing){       // (hit|stand|double|split)
-    switch(command){
-    case 1:// request an additional card
-      player_hand[player_hand_size] = drawCard();
-      updateDisplay();
-      break;
-    case 2:// proclaim to be done
-      dealerTurn();
-      break;
-    case 3:// double the bet & recieve a final card
-      bet *= 2;
-      player_hand[player_hand_size] = drawCard();
-      updateDisplay();
-      dealerTurn();
-      break;
-    case 4:
-      /* IFF the initial pair of cards given, are the same value 
-      (i.e. two eights | two kings, etc) they can be split and play
-      each one like two separate hands. The original bet will go 
-      with one hand and the player is required to place an equal bet
-      on the second hand. Each hand has to be played one at a time. 
-      Should the player lack the funds necessary to bet on the second
-      hand then they'll be unable to 'split' their hand.*/
-      if(checkWallet() && checkTAK()){
-	splitHand();
-      }
-      else{
-	// send error message
-      }
-      break;    
-  }
-  else if(fin){ // (YES           NO)
-    if(command == 1){ menu();}
-    if(command == 4){ mMenu();
-  }
-}
+void betStage(){
+  initDeck();
+  player_hand[10] = {{0,'\0'}};
+  dealer_hand[10] = {{0, '\0'}};
+  player_hand_size = 0;
+  dealer_hand_size = 0;
+  player_bet = 0;
+  player_hand_value = 0;
+  dealer_hand_value = 0;
+  betting = true;
+  second_hand = false;
+  stats = false;
+  dealers_turn = false;
+  fin = false;
+  clearScreen(COLOR_GREEN);
+  drawString5x7(20, 20, "Place your bet!", COLOR_BLACK, COLOR_GREEN);
+  drawString5x7(1, 150, "Inc  Dec  Bet  stats", COLOR_BLACK, COLOR_GREEN);
 
-void splitHand() {
-  second_hand = true;
-  
 }
 
 bool checkWallet(){
@@ -136,16 +83,11 @@ bool checkWallet(){
   return true;
 }
 
-char checkTAK(){ // verify Two of A Kind (TAK)
-  char val1 = player_hand[0];
-  char val2 = player_hand[1];
-  if(val1 == val2){return 1;}
-  return 0;
-}
-void displayString(char *str) {
-
-  // Display string on LCD
-  // ...
+bool checkTAK(){ // verify Two of A Kind (TAK)
+  char val1 = player_hand[0].value;
+  char val2 = player_hand[1].value;
+  if(val1 == val2){return true;}
+  return false;
 }
 
 void displayCards(){
@@ -157,8 +99,7 @@ void displayCards(){
     drawHand(20+(10 * i),80,50,60, COLOR_WHITE, suit, val);
   }
   drawDealersHand();
-  displayValues();
-  
+  displayValues(); 
 }
 void displayValues(){
   int total = calculateHandValue(player_hand, player_hand_size);
@@ -266,4 +207,74 @@ void playAgain(){
   clearScreen(COLOR_GREEN);
   drawString5x7(20, 80, "PLAY AGAIN?", COLOR_BLACK, COLOR_GREEN);
   drawString5x7(1, 150, "YES             NO", COLOR_BLACK, COLOR_GREEN);	
+}
+ 
+void sendCommand(unsigned char command) {
+  if(betting){ // (inc|dec|bet|stats)
+    switch(command){
+    case 1://increase bet
+      bet += 10;
+      break;
+    case 2://decrease bet
+      if(bet <= 0){
+	// send error message
+	break;
+      }
+      bet -= 10;
+      break;
+    case 3:// toggle statistics
+      if(stats){stats = false;}
+      else{stats = true;}
+      break;
+    case 4:// start round
+      betting = false;
+      dealInitialCards();
+      break;
+  }
+  else if(playing){       // (hit|stand|double|split)
+    switch(command){
+    case 1:// request an additional card
+      player_hand[player_hand_size] = drawCard();
+      updateDisplay();
+      break;
+    case 2:// proclaim to be done
+      dealerTurn();
+      break;
+    case 3:// double the bet & recieve a final card
+      bet *= 2;
+      player_hand[player_hand_size] = drawCard();
+      updateDisplay();
+      dealerTurn();
+      break;
+    case 4:
+      /* IFF the initial pair of cards given, are the same value 
+      (i.e. two eights | two kings, etc) they can be split and play
+      each one like two separate hands. The original bet will go 
+      with one hand and the player is required to place an equal bet
+      on the second hand. Each hand has to be played one at a time. 
+      Should the player lack the funds necessary to bet on the second
+      hand then they'll be unable to 'split' their hand.*/
+      if(checkWallet() && checkTAK()){
+	splitHand();
+      }
+      else{
+	// send error message
+      }
+      break;    
+  }
+  else if(fin){ // (YES           NO)
+    if(command == 1){ betStage();}
+    if(command == 4){ main();
+  }
+  else if(noStart){
+    if(command == 1 || command == 2 || command == 3 || command == 4){
+      noStart = false;
+      betting = true;
+      break;
+    }
+}
+
+void splitHand() {
+  second_hand = true;
+  
 }
