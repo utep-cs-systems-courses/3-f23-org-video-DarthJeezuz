@@ -1,26 +1,18 @@
-all: libLcd.a bj_game.elf
 
 CPU		= msp430g2553
 CFLAGS		= -mmcu=${CPU} -Os -I../h
 LDFLAGS		= -L/opt/ti/msp430_gcc/include -L../lib
+
 CC		= msp430-elf-gcc
-AS		= msp430-elf-as
-AR		= msp430-elf-ar
+AS		= msp430-elf-gcc -mmcu=${CPU} -c
 
-libLcd.a: font-5x7.o lcdutils.o lcddraw.o
-	$(AR) crs $@ $^
+all: bj_game.elf
 
-lcddraw.o: lcddraw.c lcddraw.h lcdutils.h
-lcdutils.o: lcdutils.c lcdutils.h
+bj_game.elf: ${COMMON_OBJECTS} bj_game.o deck.o switches.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -lTimer -lLcd
 
-install: libLcd.a
-	mkdir -p ../h ../lib
-	mv $^ ../lib
-	cp *.h ../h
-
-clean:
-	rm -f libLcd.a *.o *.elf
-bj_game.elf: bj_game.o libLcd.a
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ -lTimer
 load: bj_game.elf
 	msp430loader.sh $^
+
+clean:
+	rm -f *.o *.elf

@@ -18,14 +18,10 @@ void switch_interrupt_handler(){
   char sw2 = (p2val & SW2) ? 0 : SW2;
   char sw3 = (p2val & SW3) ? 0 : SW3;
   char sw4 = (p2val & SW4) ? 0 : SW4;
-  if(sw1){
-  }
-  if(sw2){
-  }
-  if(sw3){
-  }
-  if(sw4){
-  }
+  if(sw1){ sendCommand(1);}
+  if(sw2){ sendCommand(2);}
+  if(sw3){ sendCommand(3);}
+  if(sw4){ sendCommand(4);}
 }
 
 void __interrupt_vec(PORT2_VECTOR) Port_2(){

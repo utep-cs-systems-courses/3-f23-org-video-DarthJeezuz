@@ -8,22 +8,24 @@
 #include "deck.h"
 #include "switches.h"
 
-Card player_hand[10];
-Card dealer_hand[10];
+struct Card player_hand[10];
+struct Card dealer_hand[10];
 int player_hand_size = 0;//# of cards
 int dealer_hand_size = 0;
 int wallet = 150;
-int player_bet = 0;
+int bet = 0;
 int player_hand_value = 0;//total value
 int dealer_hand_value = 0;
 bool noStart = true;
 bool betting = false; // boolean
+bool playing = false;
 bool second_hand = false; // boolean
 bool stats = false;
 bool dealers_turn = false;
 bool fin = false;
 
-void sendCommand(unsigned char command);
+void betMenu();
+void playMenu();
 void splitHand();
 bool checkHand();
 bool checkTAK();
@@ -31,13 +33,16 @@ void displayCards();
 void displayValues();
 void drawDealersHand();
 void dealInitialCards();
-int calculateHandValue(int hand[], int size);
+int calculateHandValue(struct Card hand[], int size);
 void updateDisplay();
 void dealerTurn();
 void declareWin();
 void declareLoss();
+void declareDraw();
 void playAgain();
-
+void sendCommand(int command);
+void bettingStage(int cmd);
+void playStage(int cmd);
 
 int main(void) {
 
@@ -50,32 +55,39 @@ int main(void) {
   clearScreen(COLOR_GREEN);
   drawString5x7(20, 40, "BLACKJACK", COLOR_BLACK, COLOR_GREEN);
   drawString5x7(1, 150, "Press any button", COLOR_BLACK, COLOR_GREEN);
+  or_sr(18);
   // Insert card graphic if there's time
-  while(no_start){ or_sr(0x10);}
-  betStage();
-  while(1){
-    or_sr(0x10);
-  }
+  /* while(noStart){ or_sr(0x10);} */
+  /* betMenu(); */
+  /* while(1){ */
+  /*   or_sr(0x10); */
+  /* } */
 }
 
-void betStage(){
+void betMenu(){
   initDeck();
-  player_hand[10] = {{0,'\0'}};
-  dealer_hand[10] = {{0, '\0'}};
+  //player_hand[10] = {{'\0'}};
+  //dealer_hand[10] = {{'\0'}};
   player_hand_size = 0;
   dealer_hand_size = 0;
-  player_bet = 0;
+  bet = 0;
   player_hand_value = 0;
   dealer_hand_value = 0;
   betting = true;
+  playing = false;
   second_hand = false;
   stats = false;
   dealers_turn = false;
   fin = false;
   clearScreen(COLOR_GREEN);
   drawString5x7(20, 20, "Place your bet!", COLOR_BLACK, COLOR_GREEN);
-  drawString5x7(1, 150, "Inc  Dec  Bet  stats", COLOR_BLACK, COLOR_GREEN);
-
+  drawString5x7(1, 150, "Inc  Dec  Stats Bet", COLOR_BLACK, COLOR_GREEN);
+  or_sr(0x18);
+}
+void playMenu(){
+  clearScreen(COLOR_GREEN);
+  drawString5x7(1, 150, "Hit  Stand  Double  Split", COLOR_BLACK, COLOR_GREEN);
+  or_sr(0x18);
 }
 
 bool checkWallet(){
@@ -91,12 +103,13 @@ bool checkTAK(){ // verify Two of A Kind (TAK)
 }
 
 void displayCards(){
-  char val;
-  char suit;
+  //char val;
+  //char suit;
   for(int i = 0; i < player_hand_size; i++){
-    val = player_hand[i].value;
-    suit = player_hand[i].suit;    
-    drawHand(20+(10 * i),80,50,60, COLOR_WHITE, suit, val);
+    //val = player_hand[i].value;
+    //suit = player_hand[i].suit;    
+    //drawHand(20+(10 * i),80,50,60, COLOR_WHITE, suit, val);
+    drawHand(2+(10 * i),80,50,60, COLOR_WHITE, player_hand[i].suit, player_hand[i].value);
   }
   drawDealersHand();
   displayValues(); 
@@ -113,7 +126,9 @@ void displayValues(){
   sprintf(dString, "Dealer: %d", dlrCrd);
   drawString5x7(5, 50, dString, COLOR_BLACK, COLOR_WHITE);
   sprintf(handVal, "Hand: %d", total);
-  drawString5x7(55, 70, totVal, COLOR_BLACK, COLOR_WHITE);
+  drawString5x7(55, 70, handVal, COLOR_BLACK, COLOR_WHITE);
+}
+void displayStatistics(){
 }
 
 void drawDealersHand(){
@@ -127,8 +142,9 @@ void drawDealersHand(){
     }
     else{
       // draw the cards'backside
-      drawBOC(50+(10 * i), -40, 50, 60);
+      drawBOC(50+(10 * i), -40, 50, 60, COLOR_BLACK);
     }
+  }
 }
 
 void dealInitialCards() {
@@ -141,7 +157,7 @@ void dealInitialCards() {
   player_hand_value = calculateHandValue(player_hand, player_hand_size);
   dealer_hand_value = calculateHandValue(dealer_hand, dealer_hand_size);
   if(dealer_hand_value == 21 && player_hand_value == 21){ declareDraw();}
-  else if(dealer_hand_value == 21 && player_hand_value != 21){ delcareLoss();}
+  else if(dealer_hand_value == 21 && player_hand_value != 21){ declareLoss();}
   else{ updateDisplay();}
 }
 
@@ -170,8 +186,12 @@ int calculateHandValue(struct Card hand[], int size){
   return totalValue;
 }
 void updateDisplay() {
-  clearScreen(COLOR_GREEN);
-  displayCards();
+  displayValues();
+  if(playing){
+    clearScreen(COLOR_GREEN);
+    playMenu();
+    displayCards();
+  }
   if(stats){ displayStatistics();}
 }
 
@@ -188,51 +208,59 @@ void dealerTurn() {
 }
 
 void declareWin(){
-  char win[10] = {'\0'};
+  clearScreen(COLOR_GREEN);
+  char win[10] = {'\0'};// string to hold winning amount
   drawString5x7(20, 80, "YOU WIN!", COLOR_GREEN, COLOR_BLACK);
   sprintf(win, "+ %d", bet);
   //drawString5x7(55, 70, totVal, COLOR_BLACK, COLOR_WHITE);
   drawString5x7(20, 90, win, COLOR_BLACK, COLOR_WHITE);
   wallet += (bet*2);
-  bet = 0;
-  delay_cycles(10000000);
   playAgain();
 }
 void declareLoss(){
-   drawString5x7(20, 80, "YOU LOSE!", COLOR_GREEN, COLOR_BLACK);
-   delay_cycles(10000000);
-   playAgain();
+  clearScreen(COLOR_GREEN);
+  drawString5x7(20, 80, "YOU LOSE!", COLOR_GREEN, COLOR_BLACK);
+  playAgain();
+}
+void declareDraw(){
+  clearScreen(COLOR_GREEN);
+  drawString5x7(20, 80, "It's a Draw!", COLOR_GREEN, COLOR_BLACK);
+  wallet += bet;
+  playAgain();
 }
 void playAgain(){
-  clearScreen(COLOR_GREEN);
-  drawString5x7(20, 80, "PLAY AGAIN?", COLOR_BLACK, COLOR_GREEN);
+  playing = false;
+  fin = true;
+  drawString5x7(20, 110, "PLAY AGAIN?", COLOR_BLACK, COLOR_GREEN);
   drawString5x7(1, 150, "YES             NO", COLOR_BLACK, COLOR_GREEN);	
 }
  
-void sendCommand(unsigned char command) {
-  if(betting){ // (inc|dec|bet|stats)
-    switch(command){
-    case 1://increase bet
-      bet += 10;
-      break;
-    case 2://decrease bet
-      if(bet <= 0){
-	// send error message
-	break;
-      }
-      bet -= 10;
-      break;
-    case 3:// toggle statistics
-      if(stats){stats = false;}
-      else{stats = true;}
-      break;
-    case 4:// start round
-      betting = false;
-      dealInitialCards();
-      break;
+void sendCommand(int command) {
+// (inc|dec|bet|stats)
+  if(betting){ bettingStage(command);}
+// (hit|stand|double|split)
+  else if(playing){ playStage(command);}
+// (YES           NO)
+  else if(fin){ 
+    if(command == 1){ betMenu();}//yes
+    if(command == 4){ main();}//no (wallet resets)
   }
-  else if(playing){       // (hit|stand|double|split)
-    switch(command){
+  // starting Interface. press any key to start
+  else if(noStart){
+    if(command == 1 || command == 2 || command == 3 || command == 4){
+      noStart = false;
+      betting = true;
+      betMenu();
+    }
+  }
+}
+
+void splitHand() {
+  second_hand = true;
+  
+}
+void playStage(int cmd){
+  switch(cmd){
     case 1:// request an additional card
       player_hand[player_hand_size] = drawCard();
       updateDisplay();
@@ -262,19 +290,33 @@ void sendCommand(unsigned char command) {
       }
       break;    
   }
-  else if(fin){ // (YES           NO)
-    if(command == 1){ betStage();}
-    if(command == 4){ main();
-  }
-  else if(noStart){
-    if(command == 1 || command == 2 || command == 3 || command == 4){
-      noStart = false;
-      betting = true;
+}
+void bettingStage(int cmd){
+  displayValues();
+  switch(cmd){
+    case 1://increase bet
+      bet += 10;
+      wallet -= 10;
+      updateDisplay();
+      break;
+    case 2://decrease bet
+      if(bet <= 0){
+	// send error message
+	break;
+      }
+      bet -= 10;
+      wallet += 10;
+      updateDisplay();
+      break;
+    case 3:// toggle statistics
+      if(stats){stats = false;}
+      else{stats = true;}
+      updateDisplay();
+      break;
+    case 4:// start round
+      betting = false;
+      playing = true;
+      dealInitialCards();
       break;
     }
-}
-
-void splitHand() {
-  second_hand = true;
-  
 }
