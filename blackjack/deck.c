@@ -9,6 +9,7 @@ unsigned int customRandSeed = 1;
 void initDeck() {
   // Initialize the deck with values and suits
   char values[] = {'2', '3', '4', '5', '6', '7', '8', '9', 10, 'J', 'Q', 'K', 'A'};
+  /* Heart = { , Diamond = | , Spade = } , Clover = ~  */
   char suits[] = {'{', '|', '}', '~'};
   int index = 0;
   for (int v = 0; v < 13; v++) {
@@ -20,6 +21,7 @@ void initDeck() {
     }
   }
   // Shuffle the deck
+  //srand(time(NULL));
   for (int i = 0; i < 52; i++) {
     int j = i + customRand() % (52 - i);
     struct Card temp = deck[i];
@@ -35,12 +37,15 @@ int customRand(){
 
 struct Card drawCard() {
   // Draw a card from the deck and update deck state
-  int index;
+  //  int index;
+  int crd = 0;
+  //srand(time(NULL));
   do{
-    index = rand() % 52;// randomly draw from the deck to improve shuffle
-  } while(deck[index].drawn);  // keep drawing until undrawn card found
-  deck[index].drawn = true;    // mark as drawn
-  return deck[index];
+    crd++;
+    //index = customRand() % 52;// randomly draw from the deck to improve shuffle
+  } while(deck[crd].drawn);  // keep drawing until undrawn card found
+  deck[crd].drawn = true;    // mark as drawn
+  return deck[crd];
 }
 
 
